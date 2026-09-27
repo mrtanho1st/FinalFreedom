@@ -5,7 +5,8 @@ namespace FinalFreedom
     public sealed class PlayerController : MonoBehaviour
     {
         public int Lane { get; private set; } = 2;
-        public float Nitro { get; private set; } = 100;
+        public float Nitro { get; private set; } = 1000f;
+        public float maxNitro => 1000f;
         public VehicleDamage Damage { get; private set; }
         public VehicleMotor Motor { get; private set; }
         public bool NitroActive { get; private set; }
@@ -27,7 +28,7 @@ namespace FinalFreedom
         }
         public void ResetForRun()
         {
-            Lane = 2; Nitro = 100;
+            Lane = 2; Nitro = this.maxNitro;
             brakeLeft = magnetLeft = boostLeft = doubleLeft = depletedDelay = 0;
             NitroActive = false;
             SetGhost(false);
@@ -43,7 +44,7 @@ namespace FinalFreedom
             switch (kind)
             {
                 case PickupKind.Magnet: magnetLeft = game.Config.magnetSeconds; break;
-                case PickupKind.Boost: boostLeft = game.Config.boostSeconds; Nitro = 100; SetGhost(true); break;
+                case PickupKind.Boost: boostLeft = game.Config.boostSeconds; Nitro = this.maxNitro; SetGhost(true); break;
                 case PickupKind.Shield: Damage.HasShield = true; break;
                 case PickupKind.Repair: Damage.Repair(30); break;
                 case PickupKind.DoubleScore: doubleLeft = game.Config.doubleScoreSeconds; break;
@@ -70,7 +71,7 @@ namespace FinalFreedom
             }
             else if (!held)
             {
-                Nitro = Mathf.Min(100, Nitro + game.Config.nitroRefill * dt);
+                Nitro = Mathf.Min(this.maxNitro, Nitro + game.Config.nitroRefill * dt);
             }
 
             Damage.Invulnerable = BoostActive;
