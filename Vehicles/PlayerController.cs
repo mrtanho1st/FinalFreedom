@@ -51,18 +51,28 @@ namespace FinalFreedom
         }
         void Update()
         {
-            if (!game.IsPlaying) { NitroActive = false; visual.SetNitro(false); return; }
+            if (!game.IsPlaying)
+            {
+                NitroActive = false;
+                visual.SetNitro(false);
+                return;
+            }
             float dt = Time.deltaTime;
             magnetLeft = Mathf.Max(0, magnetLeft - dt); boostLeft = Mathf.Max(0, boostLeft - dt); doubleLeft = Mathf.Max(0, doubleLeft - dt);
             brakeLeft = Mathf.Max(0, brakeLeft - dt); depletedDelay = Mathf.Max(0, depletedDelay - dt);
             bool held = game.Input.HoldingNitro;
             NitroActive = BoostActive || (held && Nitro > 0 && depletedDelay <= 0 && brakeLeft <= 0);
+
             if (!BoostActive && NitroActive)
             {
                 Nitro = Mathf.Max(0, Nitro - game.Config.nitroDrain * dt);
                 if (Nitro == 0) depletedDelay = 1.5f;
             }
-            else if (!held) Nitro = Mathf.Min(100, Nitro + game.Config.nitroRefill * dt);
+            else if (!held)
+            {
+                Nitro = Mathf.Min(100, Nitro + game.Config.nitroRefill * dt);
+            }
+
             Damage.Invulnerable = BoostActive;
             SetGhost(BoostActive);
             visual.SetNitro(NitroActive);
