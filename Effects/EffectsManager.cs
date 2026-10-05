@@ -79,10 +79,14 @@ namespace FinalFreedom
             oneShot.PlayOneShot(special ? powerup : coin, special ? 0.8f : 0.35f);
         }
 
-        public void PlayMusic(bool play)
+        public void PlayMusic()
         {
-            if (play && !music.isPlaying) music.Play();
-            else if (!play && music.isPlaying) music.Pause();
+            if (!music.isPlaying) music.Play();
+        }
+
+        public void PauseMusic()
+        {
+            if (music.isPlaying) music.Pause();
         }
 
         public void StopMusic()
@@ -102,7 +106,7 @@ namespace FinalFreedom
             for (int i = 0; i < particles.Length; i++)
                 if (particles[i].gameObject.activeSelf && Time.time > until[i]) particles[i].gameObject.SetActive(false);
             bool play = game.IsPlaying && !Muted;
-            engine.volume = play ? 0.12f : 0; 
+            engine.volume = play ? 0.12f : 0;
             engine.pitch = 0.55f + game.Player.Speed / 45f;
             float nearest = 200;
             if (game.Police != null)

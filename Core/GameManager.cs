@@ -64,12 +64,12 @@ namespace FinalFreedom
             track.ResetWorld();
             Player.ResetForRun(); previousZ = Player.transform.position.z;
             State = RunState.Playing;
-            traffic.SeedOpening(); pickups.SeedOpening(); 
+            traffic.SeedOpening(); pickups.SeedOpening();
             Police.StartPursuit();
             Physics.SyncTransforms();
             Chase.Snap();
             UI.ShowHUD(); UI.Toast("ESCAPE THE CITY", 2f);
-            this.Effects.PlayMusic(true);
+            this.Effects.PlayMusic();
         }
         public void ToMenu()
         {
@@ -104,14 +104,14 @@ namespace FinalFreedom
         {
             if (State == RunState.Playing)
             {
-                this.Effects.PlayMusic(false);
+                this.Effects.PauseMusic();
                 State = RunState.Paused;
                 Time.timeScale = 0; Input.Clear();
                 UI.ShowPause();
             }
             else if (State == RunState.Paused)
             {
-                this.Effects.PlayMusic(true);
+                this.Effects.PlayMusic();
                 State = RunState.Playing;
                 Time.timeScale = 1;
                 Input.Clear(); UI.ShowHUD();
