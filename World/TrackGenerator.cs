@@ -37,6 +37,8 @@ namespace FinalFreedom
                 root.transform.SetParent(game.World, false);
                 root.layer = GameLayers.Road;
                 chunks[i] = root.transform;
+                var street = new GameObject("Street geometry").transform;
+                street.SetParent(root.transform, false);
 
                 // Không thêm BoxCollider vào từng City block:
                 // mặt trước/sau của chúng từng chặn xe ở mép nối.
@@ -45,7 +47,7 @@ namespace FinalFreedom
                     float z = -18 + j * 4;
 
                     ProceduralArt.Part(
-                        "Road", root.transform,
+                        "Road", street,
                         new Vector3(0, -0.15f, z),
                         new Vector3(12.5f, 0.3f, 4),
                         ProceduralArt.Asphalt);
@@ -54,7 +56,7 @@ namespace FinalFreedom
                     {
                         float x = stripe * 3;
                         ProceduralArt.Part(
-                            "Lane marking", root.transform,
+                            "Lane marking", street,
                             new Vector3(x, 0.014f, z),
                             new Vector3(
                                 stripe == 0 ? 0.12f : 0.065f,
@@ -68,13 +70,13 @@ namespace FinalFreedom
                     for (int sign = -1; sign <= 1; sign += 2)
                     {
                         ProceduralArt.Part(
-                            "Sidewalk", root.transform,
+                            "Sidewalk", street,
                             new Vector3(sign * 7.3f, -0.02f, z),
                             new Vector3(2.1f, 0.35f, 4),
                             new Color(0.43f, 0.55f, 0.54f));
 
                         ProceduralArt.Part(
-                            "Edge", root.transform,
+                            "Edge", street,
                             new Vector3(sign * 6.2f, 0.02f, z),
                             new Vector3(0.16f, 0.025f, 4),
                             ProceduralArt.Gold);
@@ -86,56 +88,34 @@ namespace FinalFreedom
                     for (int b = 0; b < 4; b++)
                     {
                         float z = -15 + b * 10;
-                        float height = Random.Range(6f, 19f);
-                        Color color = b % 2 == 0
-                            ? new Color(0.21f, 0.36f, 0.42f)
-                            : new Color(0.33f, 0.43f, 0.46f);
+                        var prefab = CityPrefabLibrary.Pick(CityPrefabLibrary.Instance.buildings);
+                        var building = PrefabArt.Instantiate(prefab, root.transform);
+                        building.localRotation = Quaternion.Euler(0, side < 0 ? 90 : -90, 0);
+                        PrefabArt.Fit(building, new Vector3(7f, 19f, 8f), new Vector3(side * 13f, 0f, z));
 
                         ProceduralArt.Part(
-                            "Building", root.transform,
-                            new Vector3(side * 13, height / 2 - 0.1f, z),
-                            new Vector3(7, height, 8),
-                            color);
-
-                        ProceduralArt.Part(
-                            "Roof trim", root.transform,
-                            new Vector3(side * 13, height, z),
-                            new Vector3(7.3f, 0.3f, 8.3f),
-                            ProceduralArt.Ink);
-
-                        for (int w = 0; w < 3; w++)
-                        {
-                            ProceduralArt.Part(
-                                "Window row", root.transform,
-                                new Vector3(
-                                    side * 9.45f,
-                                    height * (0.3f + w * 0.23f),
-                                    z),
-                                new Vector3(0.08f, 0.4f, 5.5f),
-                                new Color(0.74f, 0.69f, 0.44f));
-                        }
-
-                        ProceduralArt.Part(
-                            "Streetlamp", root.transform,
+                            "Streetlamp", street,
                             new Vector3(side * 7.8f, 2, z + 3),
                             new Vector3(0.12f, 4, 0.12f),
                             ProceduralArt.Ink);
 
                         ProceduralArt.Part(
-                            "Lamp head", root.transform,
+                            "Lamp head", street,
                             new Vector3(side * 7.4f, 4, z + 3),
                             new Vector3(1, 0.15f, 0.5f),
                             ProceduralArt.Gold);
                     }
 
                     ProceduralArt.Part(
-                        "Planter", root.transform,
+                        "Planter", street,
                         new Vector3(side * 7.5f, 0.5f, 0),
                         new Vector3(1, 1, 2),
                         new Color(0.19f, 0.38f, 0.31f));
                 }
 
-                ProceduralArt.MergeStatic(root.transform);
+                // Imported prefab meshes may not be CPU-readable in a player build.
+                // Batch only the generated street; keep textured buildings as prefab instances.
+                ProceduralArt.MergeStatic(street);
             }
 
             Random.state = oldState;

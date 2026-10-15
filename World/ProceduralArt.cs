@@ -7,6 +7,7 @@ namespace FinalFreedom
     public static class ProceduralArt
     {
         static readonly Dictionary<Color, Material> materials = new Dictionary<Color, Material>();
+        static readonly Dictionary<Material, Material> prefabMaterials = new Dictionary<Material, Material>();
         static readonly List<Mesh> combinedMeshes = new List<Mesh>();
         public static readonly Color Asphalt = new Color(0.10f, 0.16f, 0.20f);
         public static readonly Color Gold = new Color(1f, 0.69f, 0.13f);
@@ -28,6 +29,24 @@ namespace FinalFreedom
             mat.SetColor("_BaseColor", color);
             materials[color] = mat;
             return mat;
+        }
+        public static Material PrefabMaterial(Material source)
+        {
+            if (source == null) return Mat(Color.white);
+            if (prefabMaterials.TryGetValue(source, out var material)) return material;
+            material = new Material(Resources.Load<Shader>("CurvedCity"))
+            { name = source.name + " (Curved City)", enableInstancing = true };
+            string textureProperty = source.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+            if (source.HasProperty(textureProperty))
+            {
+                material.SetTexture("_BaseMap", source.GetTexture(textureProperty));
+                material.SetTextureScale("_BaseMap", source.GetTextureScale(textureProperty));
+                material.SetTextureOffset("_BaseMap", source.GetTextureOffset(textureProperty));
+            }
+            material.SetColor("_BaseColor", source.HasProperty("_BaseColor") ? source.GetColor("_BaseColor")
+                : source.HasProperty("_Color") ? source.GetColor("_Color") : Color.white);
+            prefabMaterials[source] = material;
+            return material;
         }
         public static GameObject Part(string name, Transform parent, Vector3 position, Vector3 scale, Color color, PrimitiveType shape = PrimitiveType.Cube)
         {
@@ -76,8 +95,9 @@ namespace FinalFreedom
         public static void Dispose()
         {
             foreach (var mat in materials.Values) Object.Destroy(mat);
+            foreach (var mat in prefabMaterials.Values) Object.Destroy(mat);
             foreach (var mesh in combinedMeshes) Object.Destroy(mesh);
-            materials.Clear(); combinedMeshes.Clear();
+            materials.Clear(); prefabMaterials.Clear(); combinedMeshes.Clear();
             if (VehiclePhysics != null) Object.Destroy(VehiclePhysics);
         }
     }
