@@ -4,7 +4,7 @@ namespace FinalFreedom
 {
     public sealed class VehicleVisual : MonoBehaviour
     {
-        Renderer[] paint, brakes, all;
+        Renderer[] brakes, all;
         Transform[] wheels;
         Renderer red, blue;
         GameObject flames, shield;
@@ -13,10 +13,10 @@ namespace FinalFreedom
         bool burnt;
         float wheelRadius;
         VehicleKind kind;
-        int playerColor;
         public void Configure(Transform model, Renderer[] paint, Transform[] wheels, Renderer[] brakes, VehicleKind kind, Bounds bounds)
         {
-            this.paint = paint; this.wheels = wheels; this.brakes = brakes;
+            this.wheels = wheels; this.brakes = brakes;
+            red = blue = null; flames = shield = null; burnt = false;
             this.kind = kind;
             wheelRadius = wheels.Length > 0 ? Mathf.Max(0.1f, PrefabArt.Measure(wheels[0], model).extents.y) : 0.3f;
             properties = new MaterialPropertyBlock(); motor = GetComponent<VehicleMotor>();
@@ -43,24 +43,6 @@ namespace FinalFreedom
             properties.Clear(); properties.SetColor("_BaseColor", color); properties.SetFloat("_Glow", glow);
             renderer.SetPropertyBlock(properties);
         }
-        public void SetPlayerColor(int index)
-        {
-            if (kind != VehicleKind.Player) return;
-            var variants = CityPrefabLibrary.Instance.playerCars;
-            playerColor = Mathf.Clamp(index, 0, variants.Length - 1);
-            // Changing the atlas preserves tyres, windows and headlights when selecting a paint colour.
-            var sources = variants[playerColor].GetComponentsInChildren<Renderer>();
-            foreach (var renderer in paint)
-                foreach (var source in sources)
-                    if (source.name == renderer.name)
-                    {
-                        var materials = source.sharedMaterials;
-                        for (int i = 0; i < materials.Length; i++) materials[i] = ProceduralArt.PrefabMaterial(materials[i]);
-                        renderer.sharedMaterials = materials;
-                        if (!burnt) renderer.SetPropertyBlock(null);
-                        break;
-                    }
-        }
         public void SetBrake(bool enabled)
         {
             foreach (var b in brakes) Tint(b, enabled ? new Color(1, 0.06f, 0.02f) : new Color(0.32f, 0.025f, 0.018f), enabled ? 0.8f : 0);
@@ -72,7 +54,6 @@ namespace FinalFreedom
             burnt = enabled;
             foreach (var renderer in all) { if (enabled) Tint(renderer, new Color(0.07f, 0.065f, 0.06f)); else renderer.SetPropertyBlock(null); }
             SetBrake(false); SetNitro(false); SetShield(false);
-            if (!enabled && kind == VehicleKind.Player) SetPlayerColor(playerColor);
         }
         void Update()
         {

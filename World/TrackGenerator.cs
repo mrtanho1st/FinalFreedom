@@ -6,6 +6,7 @@ namespace FinalFreedom
     {
         const float Length = 40f;
         const int Count = 12;
+        public const float SceneryOuterEdge = 8.35f + 3 * 8f;
 
         readonly Transform[] chunks = new Transform[Count];
 
@@ -69,11 +70,8 @@ namespace FinalFreedom
 
                     for (int sign = -1; sign <= 1; sign += 2)
                     {
-                        ProceduralArt.Part(
-                            "Sidewalk", street,
-                            new Vector3(sign * 7.3f, -0.02f, z),
-                            new Vector3(2.1f, 0.35f, 4),
-                            new Color(0.43f, 0.55f, 0.54f));
+                        PrefabArt.Module(CityPrefabLibrary.Instance.sidewalk, root.transform, "Sidewalk tile",
+                            new Vector3(2.1f, 0.35f, 4f), new Vector3(sign * 7.3f, 0.155f, z));
 
                         ProceduralArt.Part(
                             "Edge", street,
@@ -85,13 +83,27 @@ namespace FinalFreedom
 
                 for (int side = -1; side <= 1; side += 2)
                 {
+                    // Ground starts exactly at the sidewalk's outer edge (8.35 m).
+                    // Small repeated tiles follow the distance bend and recycle with their city block.
+                    for (int row = 0; row < 4; row++)
+                        for (int column = 0; column < 3; column++)
+                            PrefabArt.Module(CityPrefabLibrary.Instance.groundTile, root.transform, "Scenery ground tile",
+                                new Vector3(8f, 0.2f, 10f),
+                                new Vector3(side * (8.35f + 4f + column * 8f), 0f, -15f + row * 10f));
+
                     for (int b = 0; b < 4; b++)
                     {
                         float z = -15 + b * 10;
-                        var prefab = CityPrefabLibrary.Pick(CityPrefabLibrary.Instance.buildings);
-                        var building = PrefabArt.Instantiate(prefab, root.transform);
-                        building.localRotation = Quaternion.Euler(0, side < 0 ? 90 : -90, 0);
-                        PrefabArt.Fit(building, new Vector3(7f, 19f, 8f), new Vector3(side * 13f, 0f, z));
+                        for (int row = 0; row < 2; row++)
+                        {
+                            var prefab = CityPrefabLibrary.Pick(CityPrefabLibrary.Instance.buildings);
+                            var building = PrefabArt.Instantiate(prefab, root.transform);
+                            building.name = "Building row " + (row + 1) + " - " + prefab.name;
+                            building.localRotation = Quaternion.Euler(0, side < 0 ? 90 : -90, 0);
+                            // Centres at 13 / 22 m leave a 2 m gap between the two 7 m-wide plots.
+                            PrefabArt.Fit(building, new Vector3(7f, 19f, 8f),
+                                new Vector3(side * (13f + row * 9f), 0f, z));
+                        }
 
                         ProceduralArt.Part(
                             "Streetlamp", street,

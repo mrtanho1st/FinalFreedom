@@ -21,24 +21,30 @@ namespace FinalFreedom
         VehicleVisual visual;
         float brakeLeft, magnetLeft, boostLeft, doubleLeft, depletedDelay;
         bool ghostCollisions;
+        string loadedVehicleId;
         public void Initialize(GameManager manager)
         {
             game = manager; Motor = GetComponent<VehicleMotor>(); Damage = GetComponent<VehicleDamage>();
             visual = GetComponent<VehicleVisual>();
+            loadedVehicleId = SaveService.CurrentVehicle.id;
         }
         public void ResetForRun()
         {
+            var vehicle = SaveService.CurrentVehicle;
+            if (loadedVehicleId != vehicle.id)
+            {
+                VehicleFactory.ApplyPlayerVehicle(gameObject, vehicle);
+                loadedVehicleId = vehicle.id;
+            }
             Lane = 2; Nitro = this.maxNitro;
             brakeLeft = magnetLeft = boostLeft = doubleLeft = depletedDelay = 0;
             NitroActive = false;
             SetGhost(false);
             Motor.ResetMotion(new Vector3(GameConfig.LaneX(Lane), 0.64f, 0), 1, 0);
-            Damage.ResetHealth(SaveService.Health[SaveService.Selected]);
-            visual.SetPlayerColor(SaveService.Selected);
+            Damage.ResetHealth(vehicle.health);
         }
         public void MoveLane(int direction) { if (game.IsPlaying) Lane = Mathf.Clamp(Lane + direction, 0, 3); }
         public void Brake() { if (game.IsPlaying) brakeLeft = 1.25f; }
-        public void SlowFromPothole() { if (!BoostActive) { brakeLeft = Mathf.Max(brakeLeft, 1.1f); game.Chase.Shake(0.12f); } }
         public void ApplyPowerup(PickupKind kind)
         {
             switch (kind)

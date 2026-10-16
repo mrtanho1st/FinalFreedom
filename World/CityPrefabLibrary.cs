@@ -15,6 +15,11 @@ namespace FinalFreedom
         public GameObject[] buses;
         public GameObject[] containers;
         public GameObject[] buildings;
+        public GameObject sidewalk;
+        public GameObject groundTile;
+        public GameObject constructionBarrier;
+        public GameObject policeRoadblock;
+        public GameObject roadblockCone;
 
         static CityPrefabLibrary instance;
         public static CityPrefabLibrary Instance

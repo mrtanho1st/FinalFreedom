@@ -6,6 +6,25 @@ namespace FinalFreedom
 {
     public static class PrefabArt
     {
+        // Modular pavement and barriers must fill an exact footprint (no gaps or invisible hit areas).
+        // Scale a unit-rotation wrapper in its parent's axes; preserve the prefab's authored transform inside.
+        // Flat tile meshes are supported too. topCenter sets the visible surface elevation.
+        public static Transform Module(GameObject prefab, Transform parent, string name, Vector3 size, Vector3 topCenter)
+        {
+            var module = new GameObject(name).transform;
+            module.SetParent(parent, false);
+            module.gameObject.layer = GameLayers.Scenery;
+            Instantiate(prefab, module);
+            var bounds = Measure(module, parent);
+            if (bounds.size.x < 0.0001f || bounds.size.z < 0.0001f)
+                throw new InvalidOperationException("Prefab has empty footprint: " + prefab.name);
+            module.localScale = new Vector3(size.x / bounds.size.x,
+                bounds.size.y > 0.0001f ? size.y / bounds.size.y : 1f, size.z / bounds.size.z);
+            bounds = Measure(module, parent);
+            module.localPosition += topCenter - new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+            return module;
+        }
+
         // Fit uniformly, including child transforms and off-centre pivots. Never stretch the artwork.
         // The returned bounds are in the parent's local space, useful for gameplay colliders.
         public static Bounds Fit(Transform model, Vector3 maximumSize, Vector3 groundCenter)

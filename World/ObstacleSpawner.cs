@@ -12,9 +12,8 @@ namespace FinalFreedom
         {
             game = manager;
             // 0 = Construction barrier
-            // 1 = Pothole
-            // 2 = Police roadblock
-            pools = new ObjectPooler[3];
+            // 1 = Police roadblock
+            pools = new ObjectPooler[2];
 
             for (int i = 0; i < pools.Length; i++)
             {
@@ -30,89 +29,26 @@ namespace FinalFreedom
 
         GameObject Create(int type)
         {
-            string[] names =
-            {
-                "Construction barrier",
-                "Pothole",
-                "Police roadblock"
-            };
-
-            var root = new GameObject(names[type]);
+            var root = new GameObject(type == 0 ? "Construction barrier" : "Police roadblock");
             root.layer = GameLayers.Obstacle;
+            root.AddComponent<RoadObstacle>();
 
-            var obstacle = root.AddComponent<RoadObstacle>();
-            obstacle.IsPothole = type == 1;
-
+            // Keep the original solid collider and layer so damage, sensors and boost behave as before.
             var box = root.AddComponent<BoxCollider>();
             box.sharedMaterial = ProceduralArt.VehiclePhysics;
+            box.size = new Vector3(2.55f, 1.1f, 0.65f);
+            box.center = new Vector3(0, 0.55f, 0);
 
-            // Pothole
+            var library = CityPrefabLibrary.Instance;
+            PrefabArt.Module(type == 0 ? library.constructionBarrier : library.policeRoadblock,
+                root.transform, "Barrier model", box.size, new Vector3(0, box.size.y, 0));
             if (type == 1)
             {
-                box.isTrigger = true;
-                box.size = new Vector3(2.3f, 0.65f, 2.5f);
-                box.center = new Vector3(0, 0.25f, 0);
-
-                ProceduralArt.Part(
-                    "Broken asphalt",
-                    root.transform,
-                    new Vector3(0, 0.025f, 0),
-                    new Vector3(2.4f, 0.035f, 2.8f),
-                    new Color(0.04f, 0.07f, 0.08f),
-                    PrimitiveType.Cylinder
-                );
-            }
-            // Construction barrier / Police roadblock
-            else
-            {
-                float width = 2.55f;
-                float length = 0.65f;
-
-                box.size = new Vector3(width, 1.1f, length);
-                box.center = new Vector3(0, 0.55f, 0);
-
-                Color baseColor =
-                    type == 2
-                        ? new Color(0.19f, 0.32f, 0.45f)
-                        : new Color(1f, 0.35f, 0.08f);
-
-                ProceduralArt.Part(
-                    "Barrier body",
-                    root.transform,
-                    box.center,
-                    box.size,
-                    baseColor
-                );
-
-                for (int j = 0; j < 3; j++)
+                // Visual markers only; keep them inside the existing collision footprint.
+                for (int side = -1; side <= 1; side += 2)
                 {
-                    ProceduralArt.Part(
-                        "Warning panel",
-                        root.transform,
-                        new Vector3(
-                            (j - 1) * width / 3,
-                            0.65f,
-                            -length / 2 - 0.01f
-                        ),
-                        new Vector3(
-                            width / 6,
-                            0.35f,
-                            0.04f
-                        ),
-                        ProceduralArt.Gold
-                    );
-                }
-
-                // Police roadblock
-                if (type == 2)
-                {
-                    ProceduralArt.Part(
-                        "Police strobe",
-                        root.transform,
-                        new Vector3(0, 1.2f, 0),
-                        new Vector3(0.5f, 0.18f, 0.35f),
-                        ProceduralArt.Cyan
-                    );
+                    var cone = PrefabArt.Instantiate(library.roadblockCone, root.transform);
+                    PrefabArt.Fit(cone, new Vector3(0.3f, 0.55f, 0.3f), new Vector3(side * 1.05f, 0, -0.15f));
                 }
             }
 
@@ -167,16 +103,13 @@ namespace FinalFreedom
 
             int lane = Random.Range(0, 4);
 
-            // random 3 loại:
-            // 0 = Construction barrier
-            // 1 = Pothole
-            // 2 = Police roadblock
-            int type = Random.Range(0, 3);
+            // Choose from the two remaining solid obstacle types.
+            int type = Random.Range(0, pools.Length);
 
             Spawn(lane, nextZ, type);
 
             // Police roadblock có thể xuất hiện 2 cái
-            if (type == 2 && game.Elapsed > 45)
+            if (type == 1 && game.Elapsed > 45)
             {
                 Spawn((lane + 1) % 4, nextZ, type);
             }

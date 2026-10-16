@@ -33,6 +33,12 @@ namespace FinalFreedom
         public float policeSensor = 18f;
         public float policeRespawnMin = 10f;
         public float policeRespawnMax = 15f;
+        [Header("Sương che rìa thành phố")]
+        public Color fogColor = new Color(0.29f, 0.48f, 0.54f, 1f);
+        [Min(0)] public float sideFogStart = 26f;
+        [Min(1)] public float sideFogEnd = 31f;
+        [Min(0)] public float distanceFogStart = 130f;
+        [Min(1)] public float distanceFogEnd = 275f;
         [Header("Thiết bị")]
         public int targetFrameRate = 60;
         public int randomSeed = 24719;

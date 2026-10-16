@@ -11,6 +11,7 @@ namespace FinalFreedom
         public PlayerController Player { get; private set; }
         public SwipeManager Input { get; private set; }
         public UIManager UI { get; private set; }
+        public LeaderboardClient Leaderboard { get; private set; }
         public PoliceDirector Police { get; private set; }
         public EffectsManager Effects { get; private set; }
         public ChaseCamera Chase { get; private set; }
@@ -20,7 +21,7 @@ namespace FinalFreedom
         public float Score { get; private set; }
         public int Coins { get; private set; }
         public float Difficulty => Mathf.Clamp01(Elapsed / 160f);
-        public float CruiseSpeed => Mathf.Min(Config.maxSpeed, Config.baseSpeed + Config.speedGainPerSecond * Elapsed) + SaveService.SpeedBonus[SaveService.Selected];
+        public float CruiseSpeed => Mathf.Min(Config.maxSpeed, Config.baseSpeed + Config.speedGainPerSecond * Elapsed) + SaveService.CurrentVehicle.speedBonus;
         public float ScoreMultiplier => (Player.Lane < 2 ? 2f : 1f) * (Player.DoubleScoreActive ? 2f : 1f);
         TrackGenerator track;
         TrafficSpawner traffic;
@@ -50,12 +51,14 @@ namespace FinalFreedom
             obstacles = gameObject.AddComponent<ObstacleSpawner>(); obstacles.Initialize(this);
             pickups = gameObject.AddComponent<PickupSpawner>(); pickups.Initialize(this);
             Police = gameObject.AddComponent<PoliceDirector>(); Police.Initialize(this);
+            Leaderboard = gameObject.AddComponent<LeaderboardClient>(); Leaderboard.Initialize();
             UI = gameObject.AddComponent<UIManager>(); UI.Initialize(this);
             ToMenu();
         }
 
         public void BeginRun()
         {
+            if (!SaveService.HasPlayerName) { UI.ShowNameEntry(); return; }
             Time.timeScale = 1;
             banked = false; Elapsed = Distance = Score = 0; Coins = 0;
             Random.InitState(Config.randomSeed + (int)(Time.realtimeSinceStartup * 100));
@@ -99,6 +102,7 @@ namespace FinalFreedom
         {
             if (banked) return;
             banked = true; SaveService.BankRun(Coins, Mathf.FloorToInt(Score));
+            Leaderboard.QueueBest();
         }
         public void TogglePause()
         {
