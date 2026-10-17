@@ -11,7 +11,7 @@ namespace FinalFreedom
         public void Initialize(GameManager manager)
         {
             game = manager;
-            // 0 = Construction barrier
+            // 0 = Traffic cones (slowdown trigger)
             // 1 = Police roadblock
             pools = new ObjectPooler[2];
 
@@ -29,19 +29,36 @@ namespace FinalFreedom
 
         GameObject Create(int type)
         {
-            var root = new GameObject(type == 0 ? "Construction barrier" : "Police roadblock");
+            var root = new GameObject(type == 0 ? "Traffic cones" : "Police roadblock");
             root.layer = GameLayers.Obstacle;
             root.AddComponent<RoadObstacle>();
 
-            // Keep the original solid collider and layer so damage, sensors and boost behave as before.
+            // Keep the old footprint. Only police roadblocks remain solid damaging obstacles.
             var box = root.AddComponent<BoxCollider>();
             box.sharedMaterial = ProceduralArt.VehiclePhysics;
             box.size = new Vector3(2.55f, 1.1f, 0.65f);
             box.center = new Vector3(0, 0.55f, 0);
+            box.isTrigger = type == 0;
 
             var library = CityPrefabLibrary.Instance;
-            PrefabArt.Module(type == 0 ? library.constructionBarrier : library.policeRoadblock,
-                root.transform, "Barrier model", box.size, new Vector3(0, box.size.y, 0));
+            if (type == 0)
+            {
+                var model = new GameObject("Barrier model").transform;
+                model.SetParent(root.transform, false);
+                var cones = new Transform[3];
+                for (int i = 0; i < cones.Length; i++)
+                {
+                    var pivot = new GameObject("Traffic cone " + (i + 1)).transform;
+                    pivot.SetParent(model, false);
+                    pivot.localPosition = new Vector3((i - 1) * 0.95f, 0.55f, 0);
+                    PrefabArt.Module(library.constructionBarrier, pivot, "Cone model",
+                        new Vector3(0.65f, 1.1f, 0.65f), new Vector3(0, 0.55f, 0));
+                    cones[i] = pivot;
+                }
+                root.AddComponent<TrafficConeImpact>().Initialize(box, cones);
+            }
+            else PrefabArt.Module(library.policeRoadblock, root.transform,
+                "Barrier model", box.size, new Vector3(0, box.size.y, 0));
             if (type == 1)
             {
                 // Visual markers only; keep them inside the existing collision footprint.
@@ -103,7 +120,7 @@ namespace FinalFreedom
 
             int lane = Random.Range(0, 4);
 
-            // Choose from the two remaining solid obstacle types.
+            // Mix cone slowdown zones and solid police roadblocks.
             int type = Random.Range(0, pools.Length);
 
             Spawn(lane, nextZ, type);

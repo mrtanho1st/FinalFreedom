@@ -17,9 +17,11 @@ namespace FinalFreedom
         public float BoostTime => boostLeft;
         public float DoubleTime => doubleLeft;
         public float Speed => Mathf.Abs(Motor.Body.linearVelocity.z);
+        public bool ConeSlowed => coneSlowLeft > 0;
         GameManager game;
         VehicleVisual visual;
         float brakeLeft, magnetLeft, boostLeft, doubleLeft, depletedDelay;
+        float coneSlowLeft;
         bool ghostCollisions;
         string loadedVehicleId;
         public void Initialize(GameManager manager)
@@ -38,6 +40,7 @@ namespace FinalFreedom
             }
             Lane = 2; Nitro = this.maxNitro;
             brakeLeft = magnetLeft = boostLeft = doubleLeft = depletedDelay = 0;
+            coneSlowLeft = 0;
             NitroActive = false;
             SetGhost(false);
             Motor.ResetMotion(new Vector3(GameConfig.LaneX(Lane), 0.64f, 0), 1, 0);
@@ -45,6 +48,19 @@ namespace FinalFreedom
         }
         public void MoveLane(int direction) { if (game.IsPlaying) Lane = Mathf.Clamp(Lane + direction, 0, 3); }
         public void Brake() { if (game.IsPlaying) brakeLeft = 1.25f; }
+        public void HitTrafficCones()
+        {
+            if (!game.IsPlaying || Damage.IsDead || BoostActive) return;
+            // Refresh the duration, but never multiply repeated impacts down to a complete stop.
+            if (!ConeSlowed)
+            {
+                var velocity = Motor.Body.linearVelocity;
+                velocity.z *= Mathf.Clamp(game.Config.coneSpeedMultiplier, 0.1f, 1f);
+                Motor.Body.linearVelocity = velocity;
+            }
+            coneSlowLeft = Mathf.Max(0, game.Config.coneSlowSeconds);
+            game.Chase.Shake(0.18f);
+        }
         public void ApplyPowerup(PickupKind kind)
         {
             switch (kind)
@@ -65,6 +81,7 @@ namespace FinalFreedom
                 return;
             }
             float dt = Time.deltaTime;
+            coneSlowLeft = Mathf.Max(0, coneSlowLeft - dt);
             magnetLeft = Mathf.Max(0, magnetLeft - dt); boostLeft = Mathf.Max(0, boostLeft - dt); doubleLeft = Mathf.Max(0, doubleLeft - dt);
             brakeLeft = Mathf.Max(0, brakeLeft - dt); depletedDelay = Mathf.Max(0, depletedDelay - dt);
             bool held = game.Input.HoldingNitro;
@@ -99,6 +116,7 @@ namespace FinalFreedom
         {
             if (!game.IsPlaying || Damage.IsDead) return;
             float speed = game.CruiseSpeed * (NitroActive ? game.Config.nitroMultiplier : 1f) * (brakeLeft > 0 ? 0.45f : 1f);
+            if (ConeSlowed && !BoostActive) speed *= Mathf.Clamp(game.Config.coneSpeedMultiplier, 0.1f, 1f);
             Motor.Drive(GameConfig.LaneX(Lane), speed);
         }
     }

@@ -32,7 +32,7 @@ namespace FinalFreedom
         bool Spawn(int lane, float z, int kind)
         {
             // Kiểm tra cả xe đang active lẫn chốt chặn trước khi thuê object.
-            if (Physics.CheckBox(new Vector3(GameConfig.LaneX(lane), 1, z), new Vector3(1.3f, 1, 14), Quaternion.identity, GameLayers.Sensors, QueryTriggerInteraction.Ignore)) return false;
+            if (Physics.CheckBox(new Vector3(GameConfig.LaneX(lane), 1, z), new Vector3(1.3f, 1, 14), Quaternion.identity, GameLayers.Sensors, QueryTriggerInteraction.Collide)) return false;
             var go = pools[kind].Rent(); 
             if (go == null) return false;
             float speed = lane < 2 ? Random.Range(17f, 24f) : Random.Range(13f, 19f);

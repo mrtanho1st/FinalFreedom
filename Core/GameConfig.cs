@@ -14,6 +14,9 @@ namespace FinalFreedom
         public float trafficInterval = 1.65f;
         public float minimumTrafficInterval = 0.65f;
         public int maxTraffic = 30;
+        [Header("Traffic cone impact")]
+        [Range(0.1f, 1f)] public float coneSpeedMultiplier = 0.6f;
+        [Min(0)] public float coneSlowSeconds = 1.5f;
         [Header("Nitro / vật phẩm")]
         public float nitroMultiplier = 1.5f;
         public float nitroDrain = 12f;

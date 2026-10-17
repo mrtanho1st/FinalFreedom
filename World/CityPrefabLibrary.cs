@@ -9,7 +9,6 @@ namespace FinalFreedom
     {
         public GameObject[] playerCars;
         public GameObject police;
-        public GameObject smallCar;
         public GameObject[] sedans;
         public GameObject[] trucks;
         public GameObject[] buses;
@@ -17,6 +16,7 @@ namespace FinalFreedom
         public GameObject[] buildings;
         public GameObject sidewalk;
         public GameObject groundTile;
+        [Tooltip("Traffic cone prefab used by the former construction barrier slot.")]
         public GameObject constructionBarrier;
         public GameObject policeRoadblock;
         public GameObject roadblockCone;
@@ -38,8 +38,8 @@ namespace FinalFreedom
             {
                 case VehicleKind.Player: return playerCars[0];
                 case VehicleKind.Police: return police;
-                // SimplePoly City has no motorcycle; keep the light traffic slot as a compact car.
-                case VehicleKind.Motorcycle: return smallCar;
+                // This traffic slot is built by MotorcycleArt instead of an imported prefab.
+                case VehicleKind.Motorcycle: return null;
                 case VehicleKind.Truck: return Pick(trucks);
                 case VehicleKind.Bus: return Pick(buses);
                 case VehicleKind.Container: return Pick(containers);

@@ -162,7 +162,8 @@ namespace FinalFreedom
             Body.MoveRotation(nextRotation);
         }
 
-        public float Sense(float range, out RaycastHit nearest)
+        public float Sense(float range, out RaycastHit nearest,
+            QueryTriggerInteraction triggers = QueryTriggerInteraction.Ignore)
         {
             nearest = default;
             float best = range;
@@ -184,7 +185,7 @@ namespace FinalFreedom
                         out RaycastHit hit,
                         range,
                         GameLayers.Sensors,
-                        QueryTriggerInteraction.Ignore)
+                        triggers)
                     && hit.rigidbody != Body
                     && hit.distance < best)
                 {

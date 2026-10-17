@@ -51,7 +51,7 @@ namespace FinalFreedom
             // Unit-scale wrapper: effect positions remain in game units.
             var model = new GameObject("Vehicle model").transform;
             model.SetParent(root.transform, false);
-            var artwork = PrefabArt.Instantiate(prefab, model);
+            var artwork = kind == VehicleKind.Motorcycle ? MotorcycleArt.Create(model) : PrefabArt.Instantiate(prefab, model);
             var bounds = PrefabArt.Fit(artwork, maximumSize, new Vector3(0, -0.5f, 0));
             var box = root.GetComponent<BoxCollider>();
             box.size = bounds.size; box.center = bounds.center;
@@ -65,7 +65,9 @@ namespace FinalFreedom
             foreach (var part in artwork.GetComponentsInChildren<Transform>())
                 if (part.name.StartsWith("Wheel_", System.StringComparison.Ordinal)) wheels.Add(part);
             var brakeLights = new List<Renderer>();
-            for (int side = -1; side <= 1; side += 2)
+            if (kind == VehicleKind.Motorcycle)
+                brakeLights.Add(artwork.Find("Motorcycle frame/Tail lamp").GetComponent<Renderer>());
+            else for (int side = -1; side <= 1; side += 2)
             {
                 var light = ProceduralArt.Part("Brake glow", model,
                     new Vector3(side * bounds.size.x * 0.33f, bounds.min.y + bounds.size.y * 0.35f, bounds.min.z - 0.015f),
