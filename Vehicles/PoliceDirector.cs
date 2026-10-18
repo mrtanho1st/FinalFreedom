@@ -8,7 +8,7 @@ namespace FinalFreedom
         private int maxPoliceUnits = 5;
         private float[] readyAt;
         private float[] timeToSpawn;
-        private float timePerSpawn = 5f;
+        private float timePerSpawn = 30f;
         GameManager game;
         public void Initialize(GameManager manager)
         {

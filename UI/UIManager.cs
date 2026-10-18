@@ -22,6 +22,10 @@ namespace FinalFreedom
         Color panel = new Color(0.025f, 0.045f, 0.073f, 0.96f);
         RectTransform rankingContent;
         Text rankingStatus;
+        RectTransform touchControls, gestureControls;
+        Text gestureHudStatus, gestureSetupStatus;
+        Button gestureStart;
+        public bool IsGestureSetup => gestureStart != null && overlay.gameObject.activeInHierarchy;
         public void Initialize(GameManager manager)
         {
             game = manager;
@@ -85,8 +89,8 @@ namespace FinalFreedom
         void BuildHUD()
         {
             Panel(hud, panel, 0.025f, 0.81f, 0.975f, 0.97f);
-            Label(hud, "INTEGRITY", 0.055f, 0.936f, 0.44f, 0.96f, 23, muted);
-            Label(hud, "NITRO / HOLD", 0.54f, 0.936f, 0.94f, 0.96f, 23, muted);
+            Label(hud, "HP", 0.055f, 0.936f, 0.44f, 0.96f, 23, muted);
+            Label(hud, "NITRO", 0.54f, 0.936f, 0.94f, 0.96f, 23, muted);
             healthFill = Bar(hud, new Color(0.3f, 0.9f, 0.62f), 0.055f, 0.914f, 0.46f, 0.929f);
             nitroFill = Bar(hud, ProceduralArt.Cyan, 0.54f, 0.914f, 0.94f, 0.929f);
             score = Label(hud, "000000", 0.055f, 0.845f, 0.50f, 0.908f, 60, Color.white);
@@ -102,11 +106,19 @@ namespace FinalFreedom
             for (int i = 0; i < policeDots.Length; i++) policeDots[i] = Dot(radar, new Color(1, 0.27f, 0.28f));
             speed = Label(hud, "0\nKM/H", 0.04f, 0.18f, 0.24f, 0.28f, 42, Color.white, TextAnchor.MiddleCenter);
             powerups = Label(hud, "", 0.28f, 0.16f, 0.94f, 0.28f, 27, ProceduralArt.Cyan, TextAnchor.MiddleRight);
-            Button(hud, "<", 0.035f, 0.044f, 0.20f, 0.11f, () => game.Player.MoveLane(-1));
-            Button(hud, ">", 0.22f, 0.044f, 0.385f, 0.11f, () => game.Player.MoveLane(1));
-            Button(hud, "BRAKE", 0.43f, 0.044f, 0.66f, 0.11f, () => game.Player.Brake());
-            Button(hud, "NITRO", 0.70f, 0.044f, 0.965f, 0.11f, null, true).gameObject.AddComponent<HoldButton>();
-            Label(hud, "SWIPE TO DODGE  /  HOLD TO BOOST", 0.05f, 0.012f, 0.95f, 0.035f, 20, muted, TextAnchor.MiddleCenter);
+            touchControls = Rect(hud, "Touch driving controls", 0, 0, 1, 1);
+            Button(touchControls, "<", 0.035f, 0.044f, 0.20f, 0.11f, () => game.Player.MoveLane(-1));
+            Button(touchControls, ">", 0.22f, 0.044f, 0.385f, 0.11f, () => game.Player.MoveLane(1));
+            Button(touchControls, "BRAKE", 0.43f, 0.044f, 0.66f, 0.11f, () => game.Player.Brake());
+            Button(touchControls, "NITRO", 0.70f, 0.044f, 0.965f, 0.11f, null, true).gameObject.AddComponent<HoldButton>();
+            Label(touchControls, "SWIPE TO DODGE  /  HOLD TO BOOST", 0.05f, 0.012f, 0.95f, 0.035f, 20, muted, TextAnchor.MiddleCenter);
+            gestureControls = Rect(hud, "AR driving controls", 0, 0, 1, 1);
+            Rect(gestureControls, "Camera wheel", 0.25f, 0.015f, 0.75f, 0.28f).gameObject
+                .AddComponent<GestureCameraView>().Initialize(game.Gestures);
+            gestureHudStatus = Label(gestureControls, "", 0.03f, 0.285f, 0.97f, 0.33f, 25, ProceduralArt.Cyan, TextAnchor.MiddleCenter);
+            Button(gestureControls, "CALIBRATE", 0.77f, 0.025f, 0.98f, 0.095f, () =>
+            { game.TogglePause(); ShowGestureSetup(true); });
+            gestureControls.gameObject.SetActive(false);
         }
         RectTransform Dot(Transform parent, Color color)
         {
@@ -116,6 +128,7 @@ namespace FinalFreedom
         void ClearOverlay()
         {
             rankingContent = null; rankingStatus = null;
+            gestureSetupStatus = null; gestureStart = null;
             foreach (Transform child in overlay) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
             overlay.gameObject.SetActive(true); hud.gameObject.SetActive(false);
             toast.gameObject.SetActive(false);
@@ -128,28 +141,55 @@ namespace FinalFreedom
         }
         public void ShowMenu()
         {
+            game.Gestures.StopCamera();
             if (!SaveService.HasPlayerName) { ShowNameEntry(); return; }
             ClearOverlay(); Scrim();
             Label(overlay, "FINAL\nFREEDOM", 0.08f, 0.65f, 0.94f, 0.9f, 112, Color.white);
-            Label(overlay, "FOUR LANES. ONE WAY OUT.", 0.085f, 0.60f, 0.93f, 0.65f, 30, ProceduralArt.Gold);
-            Label(overlay, "ENDLESS CITY  /  HIGH SPEED PURSUIT", 0.085f, 0.558f, 0.93f, 0.599f, 23, muted);
-            Button(overlay, "PLAY   >", 0.08f, 0.439f, 0.92f, 0.516f, game.BeginRun, true);
+            Label(overlay, "WELCOME TO FINAL FREEDOM", 0.085f, 0.60f, 0.93f, 0.65f, 30, ProceduralArt.Gold);
+            Label(overlay, "HỒ CHÍ MINH CITY  /  HIGH SPEED PURSUIT", 0.085f, 0.558f, 0.93f, 0.599f, 23, muted);
+            Button(overlay, "PLAY", 0.08f, 0.439f, 0.48f, 0.516f, () => { game.Gestures.UseTouch(); game.BeginRun(); }, true);
+            Button(overlay, "PLAY WITH AR MODE", 0.52f, 0.439f, 0.92f, 0.516f, () => ShowGestureSetup());
             Button(overlay, "GARAGE", 0.08f, 0.345f, 0.48f, 0.415f, ShowShop);
-            Button(overlay, "LEADERBOARD", 0.52f, 0.345f, 0.92f, 0.415f, ShowRecords);
+            Button(overlay, "RANK BOARD", 0.52f, 0.345f, 0.92f, 0.415f, ShowRecords);
             Button(overlay, "HOW TO PLAY", 0.08f, 0.257f, 0.92f, 0.324f, ShowHelp);
             Label(overlay, "BEST  " + SaveService.Best.ToString("N0") + "      WALLET  $" + SaveService.Wallet, 0.08f, 0.19f, 0.92f, 0.236f, 28, ProceduralArt.Gold);
             Label(overlay, "READY: " + SaveService.CurrentVehicle.displayName, 0.08f, 0.152f, 0.92f, 0.19f, 23, muted);
             Button(overlay, game.Effects.Muted ? "SOUND: OFF" : "SOUND: ON", 0.08f, 0.061f, 0.5f, 0.113f, () => { game.Effects.ToggleMute(); ShowMenu(); });
             Label(overlay, "FINALFREEDOM / 01", 0.54f, 0.055f, 0.92f, 0.12f, 19, muted, TextAnchor.MiddleRight);
         }
-        public void ShowHUD() { overlay.gameObject.SetActive(false); hud.gameObject.SetActive(true); nextHud = 0; }
+        public void ShowHUD()
+        {
+            overlay.gameObject.SetActive(false); hud.gameObject.SetActive(true);
+            touchControls.gameObject.SetActive(!game.Gestures.Selected);
+            gestureControls.gameObject.SetActive(game.Gestures.Selected); nextHud = 0;
+        }
+        public void ShowGestureSetup(bool resume = false)
+        {
+            ClearOverlay(); Scrim();
+            Label(overlay, "AR / HAND STEERING", 0.08f, 0.84f, 0.92f, 0.91f, 50, Color.white);
+            Label(overlay, "Keep both hands visible. Hold fists level to calibrate.\nThen hold one THUMB UP for 0.7s to start / resume.",
+                0.08f, 0.73f, 0.92f, 0.83f, 29, muted, TextAnchor.MiddleCenter);
+            Rect(overlay, "AR calibration camera", 0.08f, 0.37f, 0.92f, 0.72f).gameObject
+                .AddComponent<GestureCameraView>().Initialize(game.Gestures);
+            gestureSetupStatus = Label(overlay, "Starting camera...", 0.08f, 0.31f, 0.92f, 0.37f, 28, ProceduralArt.Cyan, TextAnchor.MiddleCenter);
+            Label(overlay, "ROTATE hands: one lane, then return level\nOPEN either hand: brake\nBRING fists CLOSER: nitro / APART: normal speed",
+                0.08f, 0.205f, 0.92f, 0.30f, 26, Color.white, TextAnchor.MiddleCenter);
+            gestureStart = Button(overlay, resume ? "RESUME" : "START AR", 0.08f, 0.125f, 0.48f, 0.19f,
+                () => { if (game.Gestures.Ready) { if (resume) game.TogglePause(); else game.BeginRun(); } }, true);
+            gestureStart.interactable = false;
+            Button(overlay, "RETRY CAMERA", 0.52f, 0.125f, 0.92f, 0.19f, game.Gestures.StartTracking);
+            Button(overlay, "USE TOUCH", 0.08f, 0.04f, 0.48f, 0.105f, () =>
+            { game.Gestures.UseTouch(); if (resume) game.TogglePause(); else game.BeginRun(); });
+            Button(overlay, "BACK", 0.52f, 0.04f, 0.92f, 0.105f, game.ToMenu);
+            game.Gestures.StartTracking();
+        }
         public void ShowGameOver()
         {
             ClearOverlay(); Scrim();
-            Label(overlay, "BUSTED.", 0.08f, 0.70f, 0.94f, 0.88f, 108, new Color(1, 0.3f, 0.25f));
+            Label(overlay, "WANTED.", 0.08f, 0.70f, 0.94f, 0.88f, 108, new Color(1, 0.3f, 0.25f));
             Label(overlay, "EVERY ESCAPE STARTS AGAIN.", 0.085f, 0.643f, 0.93f, 0.70f, 28, muted);
             Label(overlay, "SCORE     " + Mathf.FloorToInt(game.Score).ToString("N0") + "\nDISTANCE     " + game.Distance.ToString("N0") + " m\nCOINS BANKED     $" + game.Coins + "\nPERSONAL BEST     " + SaveService.Best.ToString("N0"), 0.09f, 0.35f, 0.92f, 0.61f, 39, Color.white);
-            Button(overlay, "RETRY   >", 0.08f, 0.239f, 0.92f, 0.319f, game.BeginRun, true);
+            Button(overlay, "RETRY", 0.08f, 0.239f, 0.92f, 0.319f, game.BeginRun, true);
             Button(overlay, "MAIN MENU", 0.08f, 0.137f, 0.92f, 0.209f, game.ToMenu);
         }
         public void ShowPause()
@@ -157,7 +197,7 @@ namespace FinalFreedom
             ClearOverlay(); Scrim();
             Label(overlay, "PAUSED", 0.08f, 0.63f, 0.94f, 0.84f, 100, Color.white);
             Button(overlay, "RESUME", 0.08f, 0.48f, 0.92f, 0.57f, game.TogglePause, true);
-            Button(overlay, "MAIN MENU / BANK COINS", 0.08f, 0.36f, 0.92f, 0.44f, game.ToMenu);
+            Button(overlay, "MAIN MENU", 0.08f, 0.36f, 0.92f, 0.44f, game.ToMenu);
             Button(overlay, game.Effects.Muted ? "SOUND: OFF" : "SOUND: ON", 0.08f, 0.24f, 0.92f, 0.32f, () => { game.Effects.ToggleMute(); ShowPause(); });
         }
         public void ShowShop()
@@ -253,7 +293,7 @@ namespace FinalFreedom
             Panel(overlay, panel, 0, 0, 1, 1);
             Label(overlay, "WELCOME, DRIVER", 0.08f, 0.76f, 0.92f, 0.88f, 64, Color.white);
             Label(overlay, "CHOOSE YOUR NAME", 0.08f, 0.66f, 0.92f, 0.72f, 37, ProceduralArt.Gold);
-            Label(overlay, "Your name and personal best will appear on the leaderboard.\nYour name is saved on this device.", 0.08f, 0.53f, 0.92f, 0.65f, 29, muted);
+            Label(overlay, "Your name and personal best will appear on the rank board.\nYour name is saved on this device.", 0.08f, 0.53f, 0.92f, 0.65f, 29, muted);
             var background = Panel(overlay, new Color(0.12f, 0.21f, 0.27f), 0.08f, 0.42f, 0.92f, 0.50f);
             background.name = "Player name input"; background.raycastTarget = true;
             var input = background.gameObject.AddComponent<InputField>();
@@ -278,14 +318,14 @@ namespace FinalFreedom
         {
             ClearOverlay();
             Panel(overlay, panel, 0, 0, 1, 1);
-            Label(overlay, "LEADERBOARD", 0.08f, 0.84f, 0.94f, 0.94f, 60, Color.white);
+            Label(overlay, "RANK BOARD", 0.08f, 0.84f, 0.94f, 0.94f, 60, Color.white);
             Label(overlay, SaveService.PlayerName + "  /  BEST " + SaveService.Best.ToString("N0"), 0.08f, 0.78f, 0.92f, 0.84f, 31, ProceduralArt.Gold);
             var header = Panel(overlay, new Color(0.12f, 0.21f, 0.27f), 0.08f, 0.71f, 0.92f, 0.77f);
             Label(header.transform, "Top", 0.03f, 0, 0.18f, 1, 31, ProceduralArt.Gold);
             Label(header.transform, "Name", 0.20f, 0, 0.70f, 1, 31, ProceduralArt.Gold);
             Label(header.transform, "Score", 0.71f, 0, 0.97f, 1, 31, ProceduralArt.Gold, TextAnchor.MiddleRight);
             var list = Panel(overlay, new Color(0.04f, 0.08f, 0.12f), 0.08f, 0.25f, 0.92f, 0.71f);
-            list.name = "Leaderboard rows"; list.raycastTarget = true;
+            list.name = "Rankboard rows"; list.raycastTarget = true;
             var scroll = list.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false; scroll.vertical = true; scroll.scrollSensitivity = 55;
             scroll.movementType = ScrollRect.MovementType.Clamped;
@@ -340,7 +380,7 @@ namespace FinalFreedom
         {
             ClearOverlay(); Scrim();
             Label(overlay, "DRIVE. DODGE. ESCAPE.", 0.08f, 0.78f, 0.93f, 0.89f, 54, Color.white);
-            Label(overlay, "SWIPE LEFT / RIGHT   Change lanes\nSWIPE DOWN   Emergency brake\nHOLD SCREEN   Nitro +50% speed\n\nKEYBOARD   A/D or arrows, S to brake\nSPACE   Nitro     ESC   Pause\n\nLEFT LANES   Oncoming traffic, score x2\nRIGHT LANES   Same direction\n\nM   Magnet for 10 seconds\nN   Protected boost for 8 seconds\nS   Shield against one impact\n+   Repair 30 HP     x2   Double score\n\nChoose any vehicle in the garage. Collect coins to build your record.", 0.08f, 0.22f, 0.93f, 0.75f, 32, Color.white);
+            Label(overlay, "SWIPE LEFT / RIGHT   Change lanes\nSWIPE DOWN   Emergency brake\nHOLD SCREEN   Nitro +50% speed\n\nKEYBOARD   A/D or arrows, S to brake\nSPACE   Nitro     ESC   Pause\n\nLEFT LANES   Oncoming traffic, score x2\nRIGHT LANES   Same direction\n\nMAGNET   Attract coins for 10 seconds\nROCKET   Protected boost for 8 seconds\nSHIELD   Block one impact\nGREEN CROSS   Repair 30 HP\nGOLD STAR x2   Double score\n\nChoose any vehicle in the garage. Collect coins to build your record.", 0.08f, 0.22f, 0.93f, 0.75f, 32, Color.white);
             Button(overlay, "GOT IT", 0.08f, 0.09f, 0.92f, 0.17f, ShowMenu, true);
         }
         public void Toast(string message, float seconds)
@@ -355,6 +395,11 @@ namespace FinalFreedom
         }
         void Update()
         {
+            if (gestureSetupStatus != null) gestureSetupStatus.text = game.Gestures.Status;
+            if (gestureStart != null) gestureStart.interactable = game.Gestures.Ready;
+            if (IsGestureSetup && game.Gestures.Selected && game.Gestures.Ready &&
+                game.Gestures.Interpreter.ConsumeStartRequest()) gestureStart.onClick.Invoke();
+            if (gestureHudStatus != null && game.Gestures.Selected) gestureHudStatus.text = game.Gestures.Status;
             if (Screen.safeArea != screenSafe) ApplySafeArea();
             if (toast.gameObject.activeSelf && Time.unscaledTime > toastUntil) toast.gameObject.SetActive(false);
             if (!game.IsPlaying || Time.unscaledTime < nextHud) return;
@@ -364,7 +409,7 @@ namespace FinalFreedom
             distance.text = game.Distance.ToString("N0") + " m";
             speed.text = (player.Speed * 3.6f).ToString("0") + "\nKM/H";
             multiplier.text = (player.Lane < 2 ? "ONCOMING " : "SCORE ") + "x" + game.ScoreMultiplier;
-            Fill(healthFill, player.Damage.Fraction); Fill(nitroFill, player.Nitro / 100);
+            Fill(healthFill, player.Damage.Fraction); Fill(nitroFill, player.Nitro / player.maxNitro);
             powerups.text = (player.MagnetActive ? "MAGNET " + Mathf.CeilToInt(player.MagnetTime) + "s\n" : "")
                 + (player.BoostActive ? "BOOST " + Mathf.CeilToInt(player.BoostTime) + "s\n" : "")
                 + (player.Damage.HasShield ? "SHIELD READY\n" : "")

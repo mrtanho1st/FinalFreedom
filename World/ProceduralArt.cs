@@ -52,8 +52,12 @@ namespace FinalFreedom
         {
             var go = GameObject.CreatePrimitive(shape); go.name = name;
             go.transform.SetParent(parent, false); go.transform.localPosition = position; go.transform.localScale = scale;
-            var collider = go.GetComponent<Collider>(); collider.enabled = false;
-            if (Application.isPlaying) Object.Destroy(collider); else Object.DestroyImmediate(collider);
+            var collider = go.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+                if (Application.isPlaying) Object.Destroy(collider); else Object.DestroyImmediate(collider);
+            }
             var renderer = go.GetComponent<MeshRenderer>(); renderer.sharedMaterial = Mat(color);
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
@@ -94,6 +98,7 @@ namespace FinalFreedom
         }
         public static void Dispose()
         {
+            PickupArt.Dispose();
             foreach (var mat in materials.Values) Object.Destroy(mat);
             foreach (var mat in prefabMaterials.Values) Object.Destroy(mat);
             foreach (var mesh in combinedMeshes) Object.Destroy(mesh);

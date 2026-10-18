@@ -13,7 +13,11 @@ namespace FinalFreedom
         Vector2 origin;
         float started;
         bool tracking, consumed, blocked;
-        public void Clear() { tracking = consumed = blocked = HoldingNitro = NitroButtonHeld = false; }
+        public void Clear()
+        {
+            tracking = consumed = blocked = HoldingNitro = NitroButtonHeld = false;
+            GameManager.Instance?.Gestures?.ClearCommands();
+        }
         bool OverButton(Vector2 position)
         {
             if (EventSystem.current == null) return false;
@@ -32,6 +36,12 @@ namespace FinalFreedom
                 if (keyboard.rKey.wasPressedThisFrame && game.State == RunState.GameOver) game.BeginRun();
             }
             if (!game.IsPlaying) { HoldingNitro = false; return; }
+            if (game.Gestures.Selected)
+            {
+                tracking = false; NitroButtonHeld = false;
+                HoldingNitro = game.Gestures.HoldingNitro;
+                return;
+            }
             if (keyboard != null)
             {
                 if (keyboard.aKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame) game.Player.MoveLane(-1);

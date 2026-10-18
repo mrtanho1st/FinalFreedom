@@ -22,25 +22,14 @@ namespace FinalFreedom
             var go = new GameObject(kind.ToString()); go.layer = GameLayers.Pickup;
             var trigger = go.AddComponent<SphereCollider>(); trigger.isTrigger = true; trigger.radius = kind == PickupKind.Coin ? 0.62f : 0.8f;
             var model = new GameObject("Visual").transform; model.SetParent(go.transform, false);
-            Color color = kind == PickupKind.Coin ? ProceduralArt.Gold : kind == PickupKind.Repair ? new Color(0.3f, 0.95f, 0.51f) : kind == PickupKind.DoubleScore ? new Color(1, 0.3f, 0.58f) : ProceduralArt.Cyan;
+            Color color = ProceduralArt.Gold;
             if (kind == PickupKind.Coin)
             {
                 var disk = ProceduralArt.Part("Coin", model, Vector3.zero, new Vector3(0.66f, 0.09f, 0.66f), color, PrimitiveType.Cylinder);
                 disk.transform.localRotation = Quaternion.Euler(90, 0, 0);
                 ProceduralArt.Part("Coin mark", model, new Vector3(0, 0, -0.1f), new Vector3(0.1f, 0.32f, 0.05f), new Color(1, 0.9f, 0.45f));
             }
-            else
-            {
-                var block = ProceduralArt.Part("Powerup", model, Vector3.zero, Vector3.one * 0.85f, color);
-                block.transform.localRotation = Quaternion.Euler(0, 0, 15);
-                var text = new GameObject("Icon", typeof(TextMesh)); text.transform.SetParent(model, false); text.transform.localPosition = new Vector3(0, 0, -0.5f);
-                text.transform.localRotation = Quaternion.identity;
-                var mesh = text.GetComponent<TextMesh>();
-                mesh.font = Resources.Load<Font>("FinalFreedomFont");
-                if (mesh.font != null) text.GetComponent<MeshRenderer>().sharedMaterial = mesh.font.material;
-                mesh.text = new[] { "$", "M", "N", "S", "+", "x2" }[(int)kind];
-                mesh.fontSize = 48; mesh.characterSize = 0.055f; mesh.anchor = TextAnchor.MiddleCenter; mesh.color = Color.white;
-            }
+            else PickupArt.Create(kind, model);
             go.AddComponent<Pickup>().Initialize(kind, model); return go;
         }
         void Place(PickupKind kind, int lane, float z)

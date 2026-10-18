@@ -5,8 +5,8 @@ namespace FinalFreedom
     public sealed class PlayerController : MonoBehaviour
     {
         public int Lane { get; private set; } = 2;
-        public float Nitro { get; private set; } = 1000f;
-        public float maxNitro => 1000f;
+        public float Nitro { get; private set; } = 300f;
+        public float maxNitro { get; private set; } = 300f;
         public VehicleDamage Damage { get; private set; }
         public VehicleMotor Motor { get; private set; }
         public bool NitroActive { get; private set; }
@@ -38,7 +38,8 @@ namespace FinalFreedom
                 VehicleFactory.ApplyPlayerVehicle(gameObject, vehicle);
                 loadedVehicleId = vehicle.id;
             }
-            Lane = 2; Nitro = this.maxNitro;
+            Lane = 2;
+            Nitro = this.maxNitro;
             brakeLeft = magnetLeft = boostLeft = doubleLeft = depletedDelay = 0;
             coneSlowLeft = 0;
             NitroActive = false;

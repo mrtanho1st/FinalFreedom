@@ -10,6 +10,7 @@ namespace FinalFreedom
         public bool IsPlaying => State == RunState.Playing;
         public PlayerController Player { get; private set; }
         public SwipeManager Input { get; private set; }
+        public GestureDriveController Gestures { get; private set; }
         public UIManager UI { get; private set; }
         public LeaderboardClient Leaderboard { get; private set; }
         public PoliceDirector Police { get; private set; }
@@ -38,6 +39,7 @@ namespace FinalFreedom
             World.SetParent(transform, false);
             ProceduralArt.Initialize();
             Input = gameObject.AddComponent<SwipeManager>();
+            Gestures = gameObject.AddComponent<GestureDriveController>(); Gestures.Initialize(this);
             Effects = gameObject.AddComponent<EffectsManager>(); Effects.Initialize(this);
             track = gameObject.AddComponent<TrackGenerator>(); track.Initialize(this);
             var playerObject = VehicleFactory.Create(VehicleKind.Player);
@@ -59,6 +61,7 @@ namespace FinalFreedom
         public void BeginRun()
         {
             if (!SaveService.HasPlayerName) { UI.ShowNameEntry(); return; }
+            if (Gestures.Selected && !Gestures.Ready) { UI.ShowGestureSetup(); return; }
             Time.timeScale = 1;
             banked = false; Elapsed = Distance = Score = 0; Coins = 0;
             Random.InitState(Config.randomSeed + (int)(Time.realtimeSinceStartup * 100));
@@ -71,11 +74,13 @@ namespace FinalFreedom
             Police.StartPursuit();
             Physics.SyncTransforms();
             Chase.Snap();
-            UI.ShowHUD(); UI.Toast("ESCAPE THE CITY", 2f);
+            UI.ShowHUD();
+            UI.Toast("HỒ CHÍ MINH CITY MAP", 2f);
             this.Effects.PlayMusic();
         }
         public void ToMenu()
         {
+            Gestures.StopCamera();
             if (State == RunState.Playing || State == RunState.Paused) Bank();
             Time.timeScale = 1;
             State = RunState.Menu;
@@ -94,6 +99,7 @@ namespace FinalFreedom
         public void EndRun()
         {
             if (!IsPlaying) return;
+            Gestures.StopCamera();
             State = RunState.GameOver; Input.Clear(); Bank();
             UI.ShowGameOver();
             this.Effects.StopMusic();
@@ -111,10 +117,12 @@ namespace FinalFreedom
                 this.Effects.PauseMusic();
                 State = RunState.Paused;
                 Time.timeScale = 0; Input.Clear();
+                Gestures.StopCamera();
                 UI.ShowPause();
             }
             else if (State == RunState.Paused)
             {
+                if (Gestures.Selected && !Gestures.Ready) { UI.ShowGestureSetup(true); return; }
                 this.Effects.PlayMusic();
                 State = RunState.Playing;
                 Time.timeScale = 1;

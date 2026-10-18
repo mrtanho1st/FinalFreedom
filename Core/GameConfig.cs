@@ -44,7 +44,7 @@ namespace FinalFreedom
         [Min(1)] public float distanceFogEnd = 275f;
         [Header("Thiết bị")]
         public int targetFrameRate = 60;
-        public int randomSeed = 24719;
+        public int randomSeed = 12;
 
         public static float LaneX(int lane) => -4.5f + 3f * Mathf.Clamp(lane, 0, 3);
         public static int NearestLane(float x) => Mathf.Clamp(Mathf.RoundToInt((x + 4.5f) / 3f), 0, 3);
