@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL || UNITY_EDITOR
 using System;
 using Mediapipe.Tasks.Core;
 using Mediapipe.Tasks.Vision.Core;
@@ -44,3 +45,5 @@ namespace FinalFreedom
         public void Dispose() => ((IDisposable)detector).Dispose();
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL || UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Threading.Tasks;
@@ -209,3 +210,5 @@ namespace FinalFreedom
         }
     }
 }
+
+#endif

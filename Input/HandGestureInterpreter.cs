@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace FinalFreedom
 {
+    // WebGL receives this nested type through JsonUtility. Without Serializable,
+    // the browser can detect hands while Unity silently discards the hands array.
+    [System.Serializable]
     public sealed class TrackedHand
     {
         // Upright, mirrored camera coordinates: origin at bottom left, X corrected for aspect.

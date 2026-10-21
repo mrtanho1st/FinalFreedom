@@ -324,7 +324,7 @@ namespace FinalFreedom
             Label(header.transform, "Top", 0.03f, 0, 0.18f, 1, 31, ProceduralArt.Gold);
             Label(header.transform, "Name", 0.20f, 0, 0.70f, 1, 31, ProceduralArt.Gold);
             Label(header.transform, "Score", 0.71f, 0, 0.97f, 1, 31, ProceduralArt.Gold, TextAnchor.MiddleRight);
-            var list = Panel(overlay, new Color(0.04f, 0.08f, 0.12f), 0.08f, 0.25f, 0.92f, 0.71f);
+            var list = Panel(overlay, new Color(0.04f, 0.08f, 0.12f), 0.08f, 0.34f, 0.92f, 0.71f);
             list.name = "Rankboard rows"; list.raycastTarget = true;
             var scroll = list.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false; scroll.vertical = true; scroll.scrollSensitivity = 55;
@@ -345,7 +345,9 @@ namespace FinalFreedom
             var handle = Panel(area, ProceduralArt.Gold, 0, 0, 1, 1); handle.raycastTarget = true;
             bar.handleRect = handle.rectTransform; bar.targetGraphic = handle;
             bar.direction = Scrollbar.Direction.BottomToTop; scroll.verticalScrollbar = bar;
-            rankingStatus = Label(overlay, "", 0.08f, 0.18f, 0.92f, 0.24f, 23, muted);
+            rankingStatus = Label(overlay, "", 0.08f, 0.25f, 0.92f, 0.33f, 21, muted);
+            if (game.Leaderboard.Config.useDirectAdafruit)
+                Button(overlay, "CONNECT ADAFRUIT", 0.08f, 0.18f, 0.92f, 0.24f, ShowAdafruitConnection);
             Button(overlay, "REFRESH", 0.08f, 0.10f, 0.48f, 0.17f, () => game.Leaderboard.Refresh());
             Button(overlay, "ADAFRUIT IO", 0.52f, 0.10f, 0.92f, 0.17f, () => Application.OpenURL(game.Leaderboard.Config.dashboardUrl));
             Button(overlay, "BACK", 0.08f, 0.025f, 0.92f, 0.09f, ShowMenu);
@@ -356,7 +358,7 @@ namespace FinalFreedom
         {
             if (rankingContent == null) return;
             foreach (Transform child in rankingContent) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
-            rankingStatus.text = game.Leaderboard.Status;
+            rankingStatus.text = game.Leaderboard.Status + "\n" + game.Leaderboard.SubmissionStatus;
             var entries = game.Leaderboard.Entries;
             if (entries.Length == 0)
             {
@@ -371,6 +373,38 @@ namespace FinalFreedom
                 Label(row.transform, entry.name, 0.20f, 0, 0.70f, 1, 30, Color.white);
                 Label(row.transform, entry.score.ToString("N0"), 0.71f, 0, 0.97f, 1, 30, ProceduralArt.Gold, TextAnchor.MiddleRight);
             }
+        }
+        void ShowAdafruitConnection()
+        {
+            ClearOverlay();
+            Panel(overlay, panel, 0, 0, 1, 1);
+            Label(overlay, "CONNECT ADAFRUIT", 0.08f, 0.83f, 0.92f, 0.93f, 53, Color.white);
+            Label(overlay, "ACCOUNT: " + game.Leaderboard.Config.adafruitUsername, 0.08f, 0.76f, 0.92f, 0.82f, 31, ProceduralArt.Gold);
+            Label(overlay, "Viewing the rank board is public.\nEnter this account's AIO Key to upload your best.\nThe key allows writing to this Adafruit account.\nUse a demo account; share the key only with trusted players.",
+                0.08f, 0.57f, 0.92f, 0.75f, 27, muted);
+            var background = Panel(overlay, new Color(0.12f, 0.21f, 0.27f), 0.08f, 0.48f, 0.92f, 0.56f);
+            background.name = "Adafruit key input"; background.raycastTarget = true;
+            var input = background.gameObject.AddComponent<InputField>();
+            input.targetGraphic = background;
+            input.textComponent = Label(background.transform, "", 0.04f, 0.05f, 0.96f, 0.95f, 30, Color.white);
+            input.placeholder = Label(background.transform, "Paste AIO Key (aio_...)", 0.04f, 0.05f, 0.96f, 0.95f, 30, muted);
+            input.contentType = InputField.ContentType.Password;
+            input.lineType = InputField.LineType.SingleLine; input.characterLimit = 140;
+            var message = Label(overlay, game.Leaderboard.HasWriteKey ? "A key is connected for this session." : "Key stays in memory for this session only.",
+                0.08f, 0.40f, 0.92f, 0.47f, 25, ProceduralArt.Gold);
+            Label(overlay, "Adafruit free history: 30 days.\nYour device keeps your best and uploads it again when connected.",
+                0.08f, 0.29f, 0.92f, 0.39f, 25, muted);
+            Button(overlay, "CONNECT & UPLOAD BEST", 0.08f, 0.20f, 0.92f, 0.28f, () =>
+            {
+                if (!game.Leaderboard.ConnectAdafruit(input.text))
+                { message.text = "Enter a valid aio_ key, or wait for the current upload."; return; }
+                input.text = ""; ShowRecords();
+            }, true);
+            Button(overlay, "REMOVE KEY", 0.08f, 0.11f, 0.48f, 0.18f, () =>
+            { input.text = ""; game.Leaderboard.DisconnectAdafruit(); ShowRecords(); });
+            Button(overlay, "GET AIO KEY", 0.52f, 0.11f, 0.92f, 0.18f,
+                () => Application.OpenURL("https://io.adafruit.com/" + System.Uri.EscapeDataString(game.Leaderboard.Config.adafruitUsername)));
+            Button(overlay, "BACK", 0.08f, 0.025f, 0.92f, 0.09f, () => { input.text = ""; ShowRecords(); });
         }
         void OnDestroy()
         {
